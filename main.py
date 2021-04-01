@@ -19,6 +19,7 @@ import multiprocessing as mp
 from itertools import repeat
 
 import cv2
+import lmdb
 
 from libs.config import load_config
 from libs.timer import Timer
@@ -69,6 +70,25 @@ def start_listen(q, fname):
     f.close()
 
 
+def start_listen_lmdb(lmdb_q, lmdb_path):
+    """ listens for messages on the q, writes to lmdb. """
+    # map_size = 30 GB
+    env = lmdb.open(lmdb_path, map_size=32212254720)
+    txn = env.begin(write=True)
+    while 1:
+        m: dict = lmdb_q.get()
+        if m['name'] == STOP_TOKEN:
+            break
+        txn.put(("label-%s" % m["name"]).encode(), m["label"].encode())
+        txn.put(("image-%s" % m["name"]).encode(), m["image"])
+        with lock:
+            if counter.value % 1000 == 0:
+                txn.commit()
+                txn = env.begin(write=True)
+    txn.commit()
+    env.close()
+
+
 @retry
 def gen_img_retry(renderer, img_index):
     try:
@@ -105,6 +125,14 @@ def generate_img(img_index, q=None):
                                             flags.num_img,
                                             int(counter.value / flags.num_img * 100)),
                       end=print_end)
+    elif flags.lmdb:
+        q.put({
+            "name": base_name,
+            "label": word,
+            "image": im
+        })
+        with lock:
+            counter.value += 1
     else:
         utils.viz_img(im)
 
@@ -145,29 +173,42 @@ if __name__ == "__main__":
     if utils.get_platform() == "OS X":
         mp.set_start_method('spawn', force=True)
 
-    if flags.viz == 1:
-        flags.num_processes = 1
-
-    tmp_label_path = os.path.join(flags.save_dir, 'tmp_labels.txt')
-    label_path = os.path.join(flags.save_dir, 'labels.txt')
-
     manager = mp.Manager()
-    q = manager.Queue()
-
-    start_index = restore_exist_labels(label_path)
+    q = None
+    start_index = 0
+    tmp_label_path = os.path.join(flags.save_dir, 'tmp_labels.txt')
+    if not flags.viz == 1:
+        label_path = os.path.join(flags.save_dir, 'labels.txt')
+        q = manager.Queue()
+        start_index = restore_exist_labels(label_path)
+    elif flags.lmdb:
+        q = manager.Queue()
+        if not os.path.exists(flags.lmdb_path):
+            os.makedirs(flags.lmdb_path)
+        env = lmdb.open(flags.lmdb_path, readonly=True)
+        txn = env.begin()
+        start_index = int(txn.stat()['entries'] / 2)
+        print('Generate more text images in %s. Start index %d' % (flags.lmdb_path, start_index))
+    else:
+        flags.num_processes = 1
 
     timer = Timer(Timer.SECOND)
     timer.start()
-    with mp.Pool(processes=get_num_processes(flags)) as pool:
+    process_count = get_num_processes(flags)
+    with mp.Pool(processes=process_count) as pool:
         if not flags.viz:
             pool.apply_async(start_listen, (q, tmp_label_path))
-
+        elif flags.lmdb:
+            pool.apply_async(start_listen_lmdb, (q, flags.lmdb_path))
         pool.starmap(generate_img, zip(range(start_index, start_index + flags.num_img), repeat(q)))
 
-        q.put(STOP_TOKEN)
+        if not flags.viz:
+            q.put(STOP_TOKEN)
+        elif flags.lmdb:
+            q.put({"name": STOP_TOKEN})
         pool.close()
         pool.join()
     timer.end("Finish generate data")
 
-    if not flags.viz:
+    if not flags.viz and not flags.lmdb:
         sort_labels(tmp_label_path, label_path)

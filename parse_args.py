@@ -58,6 +58,10 @@ def parse_args():
     parser.add_argument('--num_processes', type=int, default=None,
                         help="Number of processes to generate image. If None, use all cpu cores")
 
+    parser.add_argument('--lmdb', action='store_true', default=False, help="save to lmdb ")
+
+    parser.add_argument('--lmdb_path', type=str, default='./lmdb/default', help='lmdb database path')
+
     flags, _ = parser.parse_known_args()
     flags.save_dir = os.path.join(flags.output_dir, flags.tag)
 

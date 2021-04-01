@@ -22,5 +22,6 @@ libs/gpu/*.so
 libs/gpu/build/
 
 output/
+lmdb/
 .caches
 
