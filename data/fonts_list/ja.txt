@@ -1,0 +1,2 @@
+./data/fonts/ja/msmincho.ttc
+./data/fonts/ja/MSGOTHIC.TTC

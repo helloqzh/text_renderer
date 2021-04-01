@@ -177,11 +177,7 @@ if __name__ == "__main__":
     q = None
     start_index = 0
     tmp_label_path = os.path.join(flags.save_dir, 'tmp_labels.txt')
-    if not flags.viz == 1:
-        label_path = os.path.join(flags.save_dir, 'labels.txt')
-        q = manager.Queue()
-        start_index = restore_exist_labels(label_path)
-    elif flags.lmdb:
+    if flags.lmdb:
         q = manager.Queue()
         if not os.path.exists(flags.lmdb_path):
             os.makedirs(flags.lmdb_path)
@@ -189,6 +185,11 @@ if __name__ == "__main__":
         txn = env.begin()
         start_index = int(txn.stat()['entries'] / 2)
         print('Generate more text images in %s. Start index %d' % (flags.lmdb_path, start_index))
+        env.close()
+    elif not flags.viz == 1:
+        label_path = os.path.join(flags.save_dir, 'labels.txt')
+        q = manager.Queue()
+        start_index = restore_exist_labels(label_path)
     else:
         flags.num_processes = 1
 
