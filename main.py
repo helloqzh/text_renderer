@@ -29,6 +29,7 @@ import libs.font_utils as font_utils
 from textrenderer.corpus.corpus_utils import corpus_factory
 from textrenderer.renderer import Renderer
 from tenacity import retry
+from textrenderer.corpus.mongo_corpus import MongoCorpus
 
 lock = mp.Lock()
 counter = mp.Value('i', 0)
@@ -40,7 +41,20 @@ cfg = load_config(flags.config_file)
 fonts = font_utils.get_font_paths_from_list(flags.fonts_list)
 bgs = utils.load_bgs(flags.bg_dir)
 
-corpus = corpus_factory(flags.corpus_mode, flags.chars_file, flags.corpus_dir, flags.length)
+corpus = None
+if flags.mongo:
+    if not flags.mongo_connection_url:
+        print("Error:mongo_connection_url config not found.")
+        exit(-1)
+    elif not flags.mongo_db:
+        print("Error:mongo_db config not found.")
+        exit(-1)
+    elif not flags.mongo_collection:
+        print("Error:mongo_collection config not found.")
+        exit(-1)
+    corpus = MongoCorpus(flags.mongo_connection_url, flags.mongo_db, flags.mongo_collection, flags.length)
+else:
+    corpus = corpus_factory(flags.corpus_mode, flags.chars_file, flags.corpus_dir, flags.length)
 
 renderer = Renderer(corpus, fonts, bgs, cfg,
                     height=flags.img_height,

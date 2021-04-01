@@ -36,11 +36,10 @@ def parse_args():
                         help='When corpus_mode is chn or eng, text on image will randomly selected from corpus.'
                              'Recursively find all txt file in corpus_dir')
 
-    parser.add_argument('--corpus_mode', type=str, default='chn', choices=['random', 'chn', 'eng', 'mongo', 'list'],
+    parser.add_argument('--corpus_mode', type=str, default='chn', choices=['random', 'chn', 'eng', 'list'],
                         help='Different corpus type have different load/get_sample method'
                              'random: random pick chars from chars file'
                              'chn: pick continuous chars from corpus'
-                             'mongo: pick continuous chars from corpus'
                              'eng: pick continuous words from corpus, space is included in label')
 
     parser.add_argument('--output_dir', type=str, default='./output', help='Images save dir')
@@ -62,6 +61,14 @@ def parse_args():
     parser.add_argument('--lmdb', action='store_true', default=False, help="save to lmdb ")
 
     parser.add_argument('--lmdb_path', type=str, default='./lmdb/default', help='lmdb database path')
+
+    parser.add_argument('--mongo', action='store_true', default=False, help="get corpus from mongodb")
+
+    parser.add_argument('--mongo_connection_url', type=str, default=None, help='mongodb connection string')
+
+    parser.add_argument('--mongo_db', type=str, default=None, help='mongodb database name')
+
+    parser.add_argument('--mongo_collection', type=str, default=None, help='mongodb database collection name')
 
     flags, _ = parser.parse_known_args()
     flags.save_dir = os.path.join(flags.output_dir, flags.tag)
