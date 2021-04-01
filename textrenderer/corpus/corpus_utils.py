@@ -1,5 +1,5 @@
 from textrenderer.corpus.chn_corpus import ChnCorpus
-from textrenderer.corpus.ja_corpus import JaCorpus
+from textrenderer.corpus.mongo_corpus import MongoCorpus
 from textrenderer.corpus.eng_corpus import EngCorpus
 from textrenderer.corpus.list_corpus import ListCorpus
 from textrenderer.corpus.random_corpus import RandomCorpus
@@ -10,7 +10,7 @@ def corpus_factory(corpus_mode: str, chars_file: str, corpus_dir: str, length: i
         "random": RandomCorpus,
         "chn": ChnCorpus,
         "eng": EngCorpus,
-        "ja": JaCorpus,
+        "mongo": MongoCorpus,
         "list": ListCorpus
     }
 

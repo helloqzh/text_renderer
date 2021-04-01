@@ -5,7 +5,7 @@ import numpy as np
 from textrenderer.corpus.corpus import Corpus
 
 
-class JaCorpus(Corpus):
+class MongoCorpus(Corpus):
 
     def load(self):
         """
