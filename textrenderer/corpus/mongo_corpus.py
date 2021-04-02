@@ -22,9 +22,10 @@ class MongoCorpus:
         try:
             min_weight_key = min(self.output_dict, key=self.output_dict.get)
             cursor = self.col.find({self.field: {"$regex": re.escape(min_weight_key)}}, {self.field: 1})
-            skip = np.random.randint(cursor.count() - 1)
+            count = cursor.count()
             # 查找已导出的文本里
-            article: str = cursor.skip(skip).limit(1).next()[self.field]
+            article: str = cursor.next()[self.field] if count == 1 \
+                else cursor.skip(np.random.randint(count - 1)).limit(1).next()[self.field]
             # 目标字符在该文集里出现的次数
             key_count = article.count(min_weight_key)
             # 随机取一个目标位置
