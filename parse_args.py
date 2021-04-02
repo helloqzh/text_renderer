@@ -70,6 +70,10 @@ def parse_args():
 
     parser.add_argument('--mongo_collection', type=str, default=None, help='mongodb database collection name')
 
+    parser.add_argument('--mongo_field', type=str, default=None, help='mongodb database document target field')
+
+    parser.add_argument('--mongo_chars_file', type=str, default='./data/chars/mongo.txt', help='alphabet dataset')
+
     flags, _ = parser.parse_known_args()
     flags.save_dir = os.path.join(flags.output_dir, flags.tag)
 

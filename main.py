@@ -52,7 +52,11 @@ if flags.mongo:
     elif not flags.mongo_collection:
         print("Error:mongo_collection config not found.")
         exit(-1)
-    corpus = MongoCorpus(flags.mongo_connection_url, flags.mongo_db, flags.mongo_collection, flags.length)
+    elif not flags.mongo_field:
+        print("Error:mongo_field config not found.")
+        exit(-1)
+    corpus = MongoCorpus(flags.mongo_connection_url, flags.mongo_db, flags.mongo_collection,
+                         flags.mongo_field, flags.length, flags.mongo_chars_file)
 else:
     corpus = corpus_factory(flags.corpus_mode, flags.chars_file, flags.corpus_dir, flags.length)
 
@@ -147,6 +151,12 @@ def generate_img(img_index, q=None):
         })
         with lock:
             counter.value += 1
+            print_end = '\n' if counter.value == flags.num_img else '\r'
+            if counter.value % 100 == 0 or counter.value == flags.num_img:
+                print("{}/{} {:2d}%".format(counter.value,
+                                            flags.num_img,
+                                            int(counter.value / flags.num_img * 100)),
+                      end=print_end)
     else:
         utils.viz_img(im)
 
@@ -195,11 +205,14 @@ if __name__ == "__main__":
         q = manager.Queue()
         if not os.path.exists(flags.lmdb_path):
             os.makedirs(flags.lmdb_path)
-        env = lmdb.open(flags.lmdb_path, readonly=True)
-        txn = env.begin()
-        start_index = int(txn.stat()['entries'] / 2)
+        try:
+            env = lmdb.open(flags.lmdb_path, readonly=True)
+            txn = env.begin()
+            start_index = int(txn.stat()['entries'] / 2)
+            env.close()
+        except:
+            pass
         print('Generate more text images in %s. Start index %d' % (flags.lmdb_path, start_index))
-        env.close()
     elif not flags.viz == 1:
         label_path = os.path.join(flags.save_dir, 'labels.txt')
         q = manager.Queue()
